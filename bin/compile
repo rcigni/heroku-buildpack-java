@@ -29,38 +29,15 @@ status_done
 
 #create the cache dir if it doesn't exist
 mkdir -p $CACHE_DIR
+mkdir $CACHE_DIR/.grails
 
-# change to cache dir to install maven
-cd $CACHE_DIR
-install_maven ${CACHE_DIR} ${BUILD_DIR}
-
-if [ -n "$MAVEN_SETTINGS_PATH" ]; then
-  MAVEN_SETTINGS_OPT="-s $MAVEN_SETTINGS_PATH"
-elif [ -n "$MAVEN_SETTINGS_URL" ]; then
-  status_pending "Installing settings.xml"
-  mkdir -p .m2
-  curl --silent --max-time 10 --location $MAVEN_SETTINGS_URL --output .m2/settings.xml
-  status_done
-  MAVEN_SETTINGS_OPT="-s $CACHE_DIR/.m2/settings.xml"
-elif [ -f $BUILD_DIR/settings.xml ]; then
-  MAVEN_SETTINGS_OPT="-s $BUILD_DIR/settings.xml"
-else
-  unset MAVEN_SETTINGS_OPT
-fi
+echo "grails.dependency.cache.dir = '$CACHE_DIR/.grails_cache'" >> $HOME/.grails/settings.groovy
 
 # change to build dir to run maven
 cd $BUILD_DIR
 
-export MAVEN_OPTS="-Xmx1024m ${MAVEN_JAVA_OPTS} -Duser.home=$BUILD_DIR -Dmaven.repo.local=$CACHE_DIR/.m2/repository"
-
-# build app
-mvnOpts="-B"
-mvnOpts="${mvnOpts}${MAVEN_SETTINGS_OPT:+ $MAVEN_SETTINGS_OPT}"
-mvnOpts="${mvnOpts} ${MAVEN_CUSTOM_OPTS:-"-DskipTests=true"}"
-mvnOpts="${mvnOpts} ${MAVEN_CUSTOM_GOALS:-"clean install"}"
-
 status "Executing: mvn ${mvnOpts}"
-$CACHE_DIR/.maven/bin/mvn ${mvnOpts} | indent
+$BUILD_DIR/grailsw -Dgrails.work.dir=$CACHE_DIR/.grails build-standalone | indent
 
 if [ "${PIPESTATUS[*]}" != "0 0" ]; then
   error "Failed to build app with Maven
