@@ -68,8 +68,9 @@ mkdir -p $CACHE_DIR/.ivy
 
 echo "CREATE .grails in $CACHE_DIR/.grails"
 ls -lha $CACHE_DIR/.grails
-
 ln -sf $CACHE_DIR/.grails $HOME/.grails
+
+echo "grails.dependency.cache.dir = '$CACHE_DIR/.grails_cache'" >> $HOME/.grails/settings.groovy
 
 if [ $GRAILS_ENV ]; then
 	BUILDCMD_OPT="$BUILDCMD_OPT -Dgrails.env=$GRAILS_ENV"
