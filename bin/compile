@@ -35,13 +35,22 @@ mkdir $CACHE_DIR/.grails_agent
 mkdir $HOME/.grails
 
 echo "grails.dependency.cache.dir = '$CACHE_DIR/.grails_repo'" >> $HOME/.grails/settings.groovy
-echo "grails.work.dir = '$CACHE_DIR/.grails_cache'" > $HOME/.grails/settings.groovy
+echo "grails.work.dir = '$CACHE_DIR/.grails_cache'" >> $HOME/.grails/settings.groovy
 export GRAILS_AGENT_CACHE_DIR=$CACHE_DIR/.grails_agent
 
 # change to build dir to run maven
 cd $BUILD_DIR
 
 status "Executing: grailsw"
+
+$BUILD_DIR/grailsw refresh-dependencies | indent
+
+if [ "${PIPESTATUS[*]}" != "0 0" ]; then
+  error "Failed to build app with Maven
+We're sorry this build is failing! If you can't find the issue in application code,
+please submit a ticket so we can help: https://help.heroku.com/"
+fi
+
 $BUILD_DIR/grailsw build-standalone | indent
 
 if [ "${PIPESTATUS[*]}" != "0 0" ]; then
