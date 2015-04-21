@@ -29,15 +29,20 @@ status_done
 
 #create the cache dir if it doesn't exist
 mkdir -p $CACHE_DIR
-mkdir $CACHE_DIR/.grails
+mkdir $CACHE_DIR/.grails_cache
+mkdir $CACHE_DIR/.grails_repo
+mkdir $CACHE_DIR/.grails_agent
+mkdir $HOME/.grails
 
-echo "grails.dependency.cache.dir = '$CACHE_DIR/.grails_cache'" >> $HOME/.grails/settings.groovy
+echo "grails.dependency.cache.dir = '$CACHE_DIR/.grails_repo'" >> $HOME/.grails/settings.groovy
+echo "grails.work.dir = '$CACHE_DIR/.grails_cache'" > $HOME/.grails/settings.groovy
+export GRAILS_AGENT_CACHE_DIR=$CACHE_DIR/.grails_agent
 
 # change to build dir to run maven
 cd $BUILD_DIR
 
-status "Executing: mvn ${mvnOpts}"
-$BUILD_DIR/grailsw -Dgrails.work.dir=$CACHE_DIR/.grails build-standalone | indent
+status "Executing: grailsw"
+$BUILD_DIR/grailsw build-standalone | indent
 
 if [ "${PIPESTATUS[*]}" != "0 0" ]; then
   error "Failed to build app with Maven
