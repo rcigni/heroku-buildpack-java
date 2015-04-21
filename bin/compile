@@ -29,10 +29,10 @@ status_done
 
 #create the cache dir if it doesn't exist
 mkdir -p $CACHE_DIR
-mkdir $CACHE_DIR/.grails_cache
-mkdir $CACHE_DIR/.grails_repo
-mkdir $CACHE_DIR/.grails_agent
-mkdir $HOME/.grails
+mkdir -p $CACHE_DIR/.grails_cache
+mkdir -p $CACHE_DIR/.grails_repo
+mkdir -p $CACHE_DIR/.grails_agent
+mkdir -p $HOME/.grails
 
 echo "grails.dependency.cache.dir = '$CACHE_DIR/.grails_repo'" >> $HOME/.grails/settings.groovy
 echo "grails.work.dir = '$CACHE_DIR/.grails_cache'" >> $HOME/.grails/settings.groovy
