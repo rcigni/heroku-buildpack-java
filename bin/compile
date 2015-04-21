@@ -40,7 +40,7 @@ ln -sf $CACHE_DIR/.grails $HOME/.grails
 # change to build dir to run maven
 cd $BUILD_DIR
 
-status "Executing: grailsw"
+status "Executing: grailsw clean refresh-dependencies"
 
 $BUILD_DIR/grailsw clean refresh-dependencies | indent
 
@@ -50,7 +50,9 @@ We're sorry this build is failing! If you can't find the issue in application co
 please submit a ticket so we can help: https://help.heroku.com/"
 fi
 
-$BUILD_DIR/grailsw -Dserver.port=$PORT run-war | indent
+status "Executing: grailsw package"
+
+$BUILD_DIR/grailsw package | indent
 
 if [ "${PIPESTATUS[*]}" != "0 0" ]; then
   error "Failed to build app with Grails[w]
