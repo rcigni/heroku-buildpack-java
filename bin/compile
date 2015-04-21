@@ -4,6 +4,27 @@
 # fail fast
 set -e
 
+get_property()
+{
+  local file=${1?"No file specified"}
+  local key=${2?"No key specified"}
+
+  # escape for regex
+  local escaped_key=$(echo $key | sed "s/\./\\\./g")
+
+  [ -f $file ] && \
+  grep -E ^$escaped_key[[:space:]=]+ $file | \
+  sed -E -e "s/$escaped_key([\ \t]*=[\ \t]*|[\ \t]+)\"?([A-Za-z0-9\.-]*)\"?.*/\2/g"
+}
+
+check_build_status()
+{
+  if [ "${PIPESTATUS[*]}" != "0 0" ]; then
+    echo " !     Failed to build app"
+    exit 1
+  fi
+}
+
 BP_DIR=$(cd $(dirname $0)/..; pwd) # absolute path
 . $BP_DIR/lib/common.sh
 
@@ -27,35 +48,68 @@ install_java ${BUILD_DIR} ${javaVersion}
 jdk_overlay ${BUILD_DIR}
 status_done
 
+if [ -f $BUILD_DIR/grailsw ] ; then
+    chmod +x $BUILD_DIR/grailsw
+    GRAILS_CMD="./grailsw"
+else
+  # install grails
+  if [ ! -d $GRAILS_DIR ]; then
+    install_grails $GRAILS_VERSION
+  else
+    echo "Grailsw not found"
+    exit 1
+  fi
+fi
+
 #create the cache dir if it doesn't exist
 mkdir -p $CACHE_DIR
 mkdir -p $CACHE_DIR/.grails
 
 ln -sf $CACHE_DIR/.grails $HOME/.grails
 
-# echo "grails.dependency.cache.dir = '$CACHE_DIR/.grails_repo'" >> $HOME/.grails/settings.groovy
-# echo "grails.work.dir = '$CACHE_DIR/.grails_cache'" >> $HOME/.grails/settings.groovy
-# export GRAILS_AGENT_CACHE_DIR=$CACHE_DIR/.grails_agent
+if [ $GRAILS_ENV ]; then
+	BUILDCMD_OPT="$BUILDCMD_OPT -Dgrails.env=$GRAILS_ENV"
+fi
 
 # change to build dir to run maven
 cd $BUILD_DIR
 
-status "Executing: grailsw clean refresh-dependencies"
+BUILDCMD="$GRAILS_CMD $BUILDCMD_OPT -Divy.default.ivy.user.dir=$CACHE_DIR war --non-interactive"
 
-$BUILD_DIR/grailsw clean refresh-dependencies | indent
+echo "-----> Executing $BUILDCMD"
+eval "$BUILDCMD" | sed -u 's/^/       /'
+check_build_status
 
-if [ "${PIPESTATUS[*]}" != "0 0" ]; then
-  error "Failed to refresh-dependencies with Grailsw
-We're sorry this build is failing! If you can't find the issue in application code,
-please submit a ticket so we can help: https://help.heroku.com/"
-fi
+if [ ! -d server ] ; then
 
-status "Executing: grailsw package"
+    mkdir server
 
-$BUILD_DIR/grailsw build-standalone standalone.jar | indent
+    if [ "jetty" == "$(get_property ${BUILD_DIR}/system.properties grails.application.container)" ] ; then
+      SERVLET_VERSION=$(get_property $BUILD_DIR/grails-app/conf/BuildConfig.groovy 'grails.servlet.version')
 
-if [ "${PIPESTATUS[*]}" != "0 0" ]; then
-  error "Failed to build app with Grails[w]
-We're sorry this build is failing! If you can't find the issue in application code,
-please submit a ticket so we can help: https://help.heroku.com/"
+      if [ "$SERVLET_VERSION" == '3.0' ]; then
+        JETTY_RUNNER_VERSION=8.1.10.v20130312
+      else
+        JETTY_RUNNER_VERSION=7.5.4.v20111024
+      fi
+
+      echo "vendored:${JETTY_RUNNER_VERSION}" > ${CACHE_DIR}/jettyVersion
+    fi
+
+    if [ -f $CACHE_DIR/jettyVersion ] ; then
+	      JETTY_RUNNER_VERSION=$(cat $CACHE_DIR/jettyVersion | sed "s/vendored://g")
+        echo "-----> No server directory found. Adding jetty-runner $JETTY_RUNNER_VERSION automatically."
+        DEFAULT_RUNNER_JAR=server/jetty-runner.jar
+        curl -fs http://s3pository.heroku.com/maven-central/org/mortbay/jetty/jetty-runner/$JETTY_RUNNER_VERSION/jetty-runner-$JETTY_RUNNER_VERSION.jar > $DEFAULT_RUNNER_JAR
+        echo "vendored:$JETTY_RUNNER_VERSION" > server/jettyVersion
+    else
+        WEBAPP_RUNNER_VERSION=7.0.57.2
+	echo "-----> No server directory found. Adding webapp-runner $WEBAPP_RUNNER_VERSION automatically."
+        DEFAULT_RUNNER_JAR=server/webapp-runner.jar
+        curl -fs http://s3pository.heroku.com/maven-central/com/github/jsimone/webapp-runner/$WEBAPP_RUNNER_VERSION/webapp-runner-$WEBAPP_RUNNER_VERSION.jar > $DEFAULT_RUNNER_JAR
+	echo "vendored:$WEBAPP_RUNNER_VERSION" > server/webappRunnerVersion
+	echo "vendored:$WEBAPP_RUNNER_VERSION" > $CACHE_DIR/webappRunnerVersion
+    fi
+
+    echo $DEFAULT_RUNNER_JAR > server/defaultRunnerJar
 fi
