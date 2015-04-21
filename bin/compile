@@ -52,7 +52,7 @@ fi
 
 status "Executing: grailsw package"
 
-$BUILD_DIR/grailsw package | indent
+$BUILD_DIR/grailsw build-standalone standalone.jar | indent
 
 if [ "${PIPESTATUS[*]}" != "0 0" ]; then
   error "Failed to build app with Grails[w]
