@@ -65,6 +65,9 @@ fi
 mkdir -p $CACHE_DIR
 mkdir -p $CACHE_DIR/.grails
 
+echo "CREATE .grails in $CACHE_DIR/.grails"
+ls -lha $CACHE_DIR/.grails
+
 ln -sf $CACHE_DIR/.grails $HOME/.grails
 
 if [ $GRAILS_ENV ]; then
