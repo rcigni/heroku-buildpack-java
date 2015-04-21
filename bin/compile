@@ -64,6 +64,7 @@ fi
 #create the cache dir if it doesn't exist
 mkdir -p $CACHE_DIR
 mkdir -p $CACHE_DIR/.grails
+mkdir -p $CACHE_DIR/.ivy
 
 echo "CREATE .grails in $CACHE_DIR/.grails"
 ls -lha $CACHE_DIR/.grails
@@ -77,8 +78,7 @@ fi
 # change to build dir to run maven
 cd $BUILD_DIR
 
-#BUILDCMD="$GRAILS_CMD $BUILDCMD_OPT -Divy.default.ivy.user.dir=$CACHE_DIR war --non-interactive"
-BUILDCMD="$GRAILS_CMD $BUILDCMD_OPT war --non-interactive"
+BUILDCMD="$GRAILS_CMD $BUILDCMD_OPT -Divy.default.ivy.user.dir=$CACHE_DIR/.ivy war --non-interactive"
 
 echo "-----> Executing $BUILDCMD"
 eval "$BUILDCMD" | sed -u 's/^/       /'
