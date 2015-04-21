@@ -74,7 +74,8 @@ fi
 # change to build dir to run maven
 cd $BUILD_DIR
 
-BUILDCMD="$GRAILS_CMD $BUILDCMD_OPT -Divy.default.ivy.user.dir=$CACHE_DIR war --non-interactive"
+#BUILDCMD="$GRAILS_CMD $BUILDCMD_OPT -Divy.default.ivy.user.dir=$CACHE_DIR war --non-interactive"
+BUILDCMD="$GRAILS_CMD $BUILDCMD_OPT war --non-interactive"
 
 echo "-----> Executing $BUILDCMD"
 eval "$BUILDCMD" | sed -u 's/^/       /'
